@@ -20,7 +20,104 @@
   Color should be set differently for each polygon.
   ====================*/
 void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
+  color c;
+  c.red = (i+40 * 7) % 255;
+  c.blue = (i+23 * 6) % 255;
+  c.green = (i+15 * 5) % 255;
 
+  double tx,ty,tz,
+         mx,my,mz,
+         bx,by,bz,
+         x0,x1,x2,
+         z0,z1,z2,
+         dx0,dx1,dx2,
+         dz0,dz1,dz2,
+         y0,y1,y2;
+  int top,mid,bot;
+  y0 = points->m[1][i];
+  y1 = points->m[1][i+1];
+  y2 = points->m[1][i+2];
+
+  if(y0 >= y2 && y0 >= y1){
+    top = i;
+    if(y1 >= y2){
+      mid = i+1;
+      bot = i+2;
+    }else{
+      mid = i+2;
+      bot = i+1;
+    }
+  }
+  if(y2 >= y1 && y2 >= y0){
+    top = i+2;
+    if(y1 >= y0){
+      mid = i+1;
+      bot = i;
+    }else{
+      mid = i;
+      bot = i+1;
+    }
+  }
+  if(y1>=y0 && y1 >= y2){
+    top = i + 1;
+    if(y2 >= y0){
+      mid = i + 2;
+      bot = i;
+    }else{
+      mid = i;
+      bot = i + 2;
+    }
+  }
+
+  tx = points->m[0][top];
+  ty = points->m[1][top];
+  tz = points->m[2][top];
+  mx = points->m[0][mid];
+  my = points->m[1][mid];
+  mz = points->m[2][mid];
+  bx = points->m[0][bot];
+  by = points->m[1][bot];
+  bz = points->m[2][bot];
+
+  if(ty != by){
+    dx0 = (tx-bx)/(ty - by);
+    dz0 = (tz-bz)/(ty - by);
+  }
+  if(ty != my){
+    dx1 = (tx-mx)/(ty - my);
+    dz1 = (tz-mz)/(ty - my);
+  }
+  if(my != by){
+    dx2 = (mx-bx)/(my - by);
+    dz2 = (mz-bz)/(my - by);
+  }
+  x0 = bx;
+  x1 = bx;
+  x2 = mx;
+  z0 = bz;
+  z1 = mz;
+  z2 = mz;
+  y0 = by;
+  y1 = my;
+  y2 = ty;
+
+  while(y0<y1){
+      draw_line(x0,y0,z0,x1,y0,z1,s,zb,c);
+      x0 += dx0;
+      z0 += dz0;
+      x1 += dx2;
+      z1 += dz2;
+      y0 += 1;
+  }
+
+  while(y0<y2){
+      draw_line(x0,y0,z0,x2,y0,z2,s,zb,c);
+      x0 += dx0;
+      z0 += dz0;
+      x2 += dx1;
+      z2 += dz1;
+      y0 += 1;
+  }
 }
 
 /*======== void add_polygon() ==========
@@ -70,28 +167,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuffer zb, color c ) {
     normal = calculate_normal(polygons, point);
 
     if ( normal[2] > 0 ) {
-
-      draw_line( polygons->m[0][point],
-                 polygons->m[1][point],
-                 polygons->m[2][point],
-                 polygons->m[0][point+1],
-                 polygons->m[1][point+1],
-                 polygons->m[2][point+1],
-                 s, zb, c);
-      draw_line( polygons->m[0][point+2],
-                 polygons->m[1][point+2],
-                 polygons->m[2][point+2],
-                 polygons->m[0][point+1],
-                 polygons->m[1][point+1],
-                 polygons->m[2][point+1],
-                 s, zb, c);
-      draw_line( polygons->m[0][point],
-                 polygons->m[1][point],
-                 polygons->m[2][point],
-                 polygons->m[0][point+2],
-                 polygons->m[1][point+2],
-                 polygons->m[2][point+2],
-                 s, zb, c);
+      scanline_convert(polygons, point, s, zb);
     }
   }
 }
@@ -294,7 +370,7 @@ struct matrix * generate_sphere(double cx, double cy, double cz,
 
   should call generate_torus to create the necessary points
   ====================*/
-void add_torus( struct matrix * edges, 
+void add_torus( struct matrix * edges,
                 double cx, double cy, double cz,
                 double r1, double r2, int step ) {
 
@@ -432,10 +508,10 @@ of type specified in type (see matrix.h for curve type constants)
 to the matrix edges
 ====================*/
 void add_curve( struct matrix *edges,
-                double x0, double y0, 
-                double x1, double y1, 
-                double x2, double y2, 
-                double x3, double y3, 
+                double x0, double y0,
+                double x1, double y1,
+                double x2, double y2,
+                double x3, double y3,
                 int step, int type ) {
   double t, x, y;
   int i;
@@ -444,11 +520,11 @@ void add_curve( struct matrix *edges,
 
   xcoefs = generate_curve_coefs(x0, x1, x2, x3, type);
   ycoefs = generate_curve_coefs(y0, y1, y2, y3, type);
-  
+
   /* print_matrix(xcoefs); */
   /* printf("\n"); */
   /* print_matrix(ycoefs); */
-  
+
   for (i=1; i<=step; i++) {
     t = (double)i/step;
 
@@ -472,8 +548,8 @@ void add_curve( struct matrix *edges,
 Inputs:   struct matrix * points
          int x
          int y
-         int z 
-Returns: 
+         int z
+Returns:
 adds point (x, y, z) to points and increment points.lastcol
 if points is full, should call grow on points
 ====================*/
@@ -481,7 +557,7 @@ void add_point( struct matrix * points, double x, double y, double z) {
 
   if ( points->lastcol == points->cols )
     grow_matrix( points, points->lastcol + 100 );
-  
+
   points->m[0][ points->lastcol ] = x;
   points->m[1][ points->lastcol ] = y;
   points->m[2][ points->lastcol ] = z;
@@ -492,12 +568,12 @@ void add_point( struct matrix * points, double x, double y, double z) {
 /*======== void add_edge() ==========
 Inputs:   struct matrix * points
           int x0, int y0, int z0, int x1, int y1, int z1
-Returns: 
+Returns:
 add the line connecting (x0, y0, z0) to (x1, y1, z1) to points
 should use add_point
 ====================*/
-void add_edge( struct matrix * points, 
-	       double x0, double y0, double z0, 
+void add_edge( struct matrix * points,
+	       double x0, double y0, double z0,
 	       double x1, double y1, double z1) {
   add_point( points, x0, y0, z0 );
   add_point( points, x1, y1, z1 );
@@ -506,8 +582,8 @@ void add_edge( struct matrix * points,
 /*======== void draw_lines() ==========
 Inputs:   struct matrix * points
          screen s
-         color c 
-Returns: 
+         color c
+Returns:
 Go through points 2 at a time and call draw_line to add that line
 to the screen
 ====================*/
@@ -539,7 +615,6 @@ void draw_line(int x0, int y0, double z0,
   int x, y, d, A, B;
   int dy_east, dy_northeast, dx_east, dx_northeast, d_east, d_northeast;
   int loop_start, loop_end;
-
   //swap points if going right -> left
   int xt, yt;
   if (x0 > x1) {
@@ -600,7 +675,6 @@ void draw_line(int x0, int y0, double z0,
   }
 
   while ( loop_start < loop_end ) {
-
     plot( s, zb, c, x, y, 0);
     if ( (wide && ((A > 0 && d > 0) ||
                    (A < 0 && d < 0)))
@@ -618,5 +692,5 @@ void draw_line(int x0, int y0, double z0,
     }
     loop_start++;
   } //end drawing loop
-  plot( s, zb, c, x1, y1, 0 );
+  plot( s, zb, c, x1, y1, 0);
 } //end draw_line
