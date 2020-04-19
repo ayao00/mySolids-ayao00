@@ -19,12 +19,10 @@
 
   Color should be set differently for each polygon.
   ====================*/
-void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
-  color c;
-  c.red = (i+40 * 7) % 255;
-  c.blue = (i+23 * 6) % 255;
-  c.green = (i+15 * 5) % 255;
-
+void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb, color c) {
+  c.red = (c.red + rand() % 15) % 255;
+  c.green = (c.green + rand() % 15) % 255;
+  c.blue = (c.blue + rand() % 15) % 255;
   double tx,ty,tz,
          mx,my,mz,
          bx,by,bz,
@@ -167,7 +165,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuffer zb, color c ) {
     normal = calculate_normal(polygons, point);
 
     if ( normal[2] > 0 ) {
-      scanline_convert(polygons, point, s, zb);
+      scanline_convert(polygons, point, s, zb, c);
     }
   }
 }

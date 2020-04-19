@@ -90,9 +90,9 @@ void parse_file ( char * filename,
   clear_screen(s);
   clear_zbuffer(zb);
   color c;
-  c.red = 0;
-  c.green = 255;
-  c.blue = 255;
+  c.red = 128;
+  c.green = 100;
+  c.blue = 0;
 
   if ( strcmp(filename, "stdin") == 0 )
     f = stdin;
@@ -106,6 +106,9 @@ void parse_file ( char * filename,
     double xvals[4];
     double yvals[4];
     double zvals[4];
+    double red[4];
+    double green[4];
+    double blue[4];
     struct matrix *tmp;
     double r, r1;
     double theta;
@@ -180,7 +183,7 @@ void parse_file ( char * filename,
         type = HERMITE;
       else
         type = BEZIER;
-      
+
       fgets(line, sizeof(line), f);
       //printf("CURVE\t%s", line);
 
@@ -192,7 +195,7 @@ void parse_file ( char * filename,
           /*       xvals[1], yvals[1], */
           /*       xvals[2], yvals[2], */
           /*       xvals[3], yvals[3]); */
-      
+
           //printf("%d\n", type);
           add_curve( edges, xvals[0], yvals[0], xvals[1], yvals[1],
                      xvals[2], yvals[2], xvals[3], yvals[3], step, type);
@@ -228,7 +231,7 @@ void parse_file ( char * filename,
           matrix_mult(peek(csystems), tmp);
           copy_matrix(tmp, peek(csystems));
         }//end scale
-    
+
     else if ( strncmp(line, "move", strlen(line)) == 0 ) {
       fgets(line, sizeof(line), f);
       //printf("MOVE\t%s", line);
@@ -277,7 +280,14 @@ void parse_file ( char * filename,
     /*   matrix_mult(transform, edges); */
     /*   matrix_mult(transform, polygons); */
     /* }//end apply */
-
+    else if( strncmp(line, "color", strlen(line)) == 0 ) {
+      fgets(line, sizeof(line), f);
+      sscanf(line, "%lf %lf %lf",
+             red, green, blue);
+      c.red = red[0];
+      c.green = green[0];
+      c.blue = blue[0];
+    }
     else if ( strncmp(line, "display", strlen(line)) == 0 ) {
       //printf("DISPLAY\t%s", line);
       //clear_screen(s);

@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   edges = new_matrix(4, 4);
   polygons = new_matrix(4, 4);
   csystems = new_stack();
-
+  srand(time(0));
   /* print_matrix(make_rotX(M_PI/4)); */
   /* printf("\n"); */
   /* print_matrix(make_rotY(M_PI/4)); */
